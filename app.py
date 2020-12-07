@@ -42,11 +42,17 @@ table_data, table_col = generate_init_data()
 # Cycle conserving EDF algorithim and figure
 def fig_edf_data(df_params: pd.DataFrame, fm_all=False, fm_val=1) -> list:
     curr_period = 0
-    start_time = []
-    end_time = []
-    plot_data = []
-    deadline = {"state": False, "x": None, "y": None}
+    start_time = []  # start time of each execution block
+    end_time = []  # end time of each execution block
+    plot_data = []  # final data returned at the end for graphing
+    deadline = {
+        "state": False,
+        "x": None,
+        "y": None,
+    }  # keep track of whether deadline is missed
+
     df_params = df_params.sort_values(by=["Period"])
+
     # Get lists from Pandas
     task_id = df_params["Task"].tolist()
     task_state = df_params["Worst Case"].tolist()
@@ -60,6 +66,7 @@ def fig_edf_data(df_params: pd.DataFrame, fm_all=False, fm_val=1) -> list:
         + "<b>%{text}</b>"
     )
 
+    # Setup for graph data
     for task in task_id:
         fig = {
             "name": "Task-{}".format(task),
@@ -72,11 +79,12 @@ def fig_edf_data(df_params: pd.DataFrame, fm_all=False, fm_val=1) -> list:
         }
         plot_data.append(fig)
 
-    # Get a list of invocations
+    # Take the all invoation columns
     df_invoc = df_params.filter(regex="Invocation")
+    # consolidate all invocation columns into a 2D list
     task_invoc = [df_invoc[col].tolist() for col in df_invoc.columns]
 
-    # Iterate thru through each invocation of each task
+    # Iterate thru through each invocation of each task (the nested for loops)
     for inv_num, invocation in enumerate(task_invoc, start=1):
         for task_num in range(len(task_state)):
             # If at start of algo
@@ -157,7 +165,6 @@ def fig_edf_data(df_params: pd.DataFrame, fm_all=False, fm_val=1) -> list:
     plot_data = [go.Bar(fig) for fig in plot_data]
 
     return plot_data, deadline
-
 
 
 import dash_table as dt
@@ -263,7 +270,7 @@ app.layout = html.Div(
         ),
         html.Div(
             [
-                dcc.Graph(id="fm-graph"),
+                dcc.Graph(id="fm-graph", config={"displayModeBar": False}),
             ],
         ),
         dcc.Store(id="invocation-store", data=2),
